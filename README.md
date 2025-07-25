@@ -1,66 +1,122 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# News Aggregator Backend
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based backend for a news aggregator website. This project fetches articles from multiple news sources, stores them in a local database, and provides a flexible API for frontend consumption.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Features
+- Aggregates news from at least 3 sources (The Guardian, NewsAPI, New York Times)
+- Stores articles, categories, and sources in a relational database
+- Regularly updates articles using scheduled jobs
+- RESTful API for retrieving articles with search, filtering, and pagination
+- Clean, maintainable code following SOLID principles
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Data Sources
+- **The Guardian** ([API Docs](https://open-platform.theguardian.com/documentation/))
+- **NewsAPI** ([API Docs](https://newsapi.org/docs/endpoints/top-headlines))
+- **New York Times** ([API Docs](https://developer.nytimes.com/docs/top-stories-product/1/overview))
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## API Usage
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Get Articles
+`GET /api/articles`
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### Query Parameters
+- `search` — Search by title or content
+- `source` — Filter by source name
+- `category` — Filter by category name
+- `author` — Filter by author
+- `date_from` — Filter articles published after this date (YYYY-MM-DD)
+- `date_to` — Filter articles published before this date (YYYY-MM-DD)
+- Pagination: `page` (default: 1)
 
-## Laravel Sponsors
+#### Example Request
+```
+GET /api/articles?search=climate&source=The Guardian&category=World&page=2
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+#### Example Response
+```
+{
+  "current_page": 2,
+  "data": [
+    {
+      "id": 12,
+      "title": "Climate Change and Policy",
+      "description": "...",
+      "author": "Jane Doe",
+      "url": "https://...",
+      "urlToImage": "https://...",
+      "published_at": "2025-07-22 10:00:00",
+      "source_id": 1,
+      "category_id": 3
+    },
+    ...
+  ],
+  "last_page": 5,
+  ...
+}
+```
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[WebReinvent](https://webreinvent.com/)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Jump24](https://jump24.co.uk)**
-- **[Redberry](https://redberry.international/laravel/)**
-- **[Active Logic](https://activelogic.com)**
-- **[byte5](https://byte5.de)**
-- **[OP.GG](https://op.gg)**
+## Setup & Deployment
 
-## Contributing
+1. **Clone the repository**
+2. **Install dependencies**
+   ```
+   composer install
+   npm install && npm run build
+   ```
+3. **Configure environment**
+   - Copy `.env.example` to `.env` and set your DB and API keys
+4. **Run migrations and seeders**
+   ```
+   php artisan migrate --seed
+   ```
+5. **Set up Laravel scheduler**
+   - Add this cron job to your server:
+     ```
+     * * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+     ```
+6. **(Optional) Start queue worker**
+   ```
+   php artisan queue:work
+   ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Scheduler & Jobs
+- **Jobs:** `FetchGuardianJob`, `FetchNewsApiJob`, `FetchNYTJob`
+- **Scheduling:** Defined in `app/Console/Kernel.php` (default: hourly)
+- **How it works:**
+  - Each job fetches articles from its source and stores/updates them in the database.
+  - The scheduler triggers these jobs automatically.
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+---
 
-## Security Vulnerabilities
+## Extending the Project
+- **Add a new source:**
+  1. Create a new Job class in `app/Jobs/`
+  2. Implement the fetching logic
+  3. Schedule the job in `app/Console/Kernel.php`
+- **Add new filters:**
+  - Update `ArticleController@index` to support additional query parameters
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
+
+## SOLID Principles in the Codebase
+- **Single Responsibility:** Each job fetches from one source; controllers handle API logic only.
+- **Open/Closed:** Add new sources or filters without modifying existing code.
+- **Liskov Substitution:** All jobs implement the same interface and can be scheduled interchangeably.
+- **Interface Segregation:** Jobs, controllers, and models have focused, minimal interfaces.
+- **Dependency Inversion:** External dependencies (API keys, HTTP clients) are injected/configured, not hardcoded.
+
+---
 
 ## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT
